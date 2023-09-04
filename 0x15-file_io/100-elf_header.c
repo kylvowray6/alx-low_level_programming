@@ -3,13 +3,22 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <elf.h>
-#include "main.h"
 
 /**
- * print_elf_info - Prints information from the ELF header.
- * @elf_header: A pointer to the ELF header structure.
+ * error_exit - Display an error message and exit with status code 98.
+ * @message: The error message to display.
  */
-void print_elf_info(Elf64_Ehdr *elf_header)
+void error_exit(const char *message)
+{
+    dprintf(STDERR_FILENO, "%s\n", message);
+    exit(98);
+}
+
+/**
+ * print_elf_header_info - Print information from the ELF header.
+ * @elf_header: Pointer to the ELF header.
+ */
+void print_elf_header_info(Elf64_Ehdr *elf_header)
 {
     printf("ELF Header:\n");
     printf("  Magic:   ");
@@ -87,48 +96,34 @@ void print_elf_info(Elf64_Ehdr *elf_header)
 
 /**
  * main - Entry point of the program.
- * @ac: The number of command-line arguments.
- * @av: An array of command-line argument strings.
+ * @argc: The number of command-line arguments.
+ * @argv: An array of command-line argument strings.
  *
  * Return: 0 on success, or the corresponding exit code on failure.
  */
-int main(int ac, char *av[])
+int main(int argc, char *argv[])
 {
     int fd;
     Elf64_Ehdr elf_header;
 
-    if (ac != 2)
-    {
-        dprintf(2, "Usage: %s elf_filename\n", av[0]);
-        return (EXIT_FAILURE);
-    }
+    if (argc != 2)
+        error_exit("Usage: elf_header elf_filename");
 
-    fd = open(av[1], O_RDONLY);
+    fd = open(argv[1], O_RDONLY);
     if (fd == -1)
-    {
-        dprintf(2, "Error: Can't open file %s\n", av[1]);
-        return (EXIT_FAILURE);
-    }
+        error_exit("Error: Can't open file");
 
     if (read(fd, &elf_header, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
-    {
-        dprintf(2, "Error: Can't read from file %s\n", av[1]);
-        close(fd);
-        return (EXIT_FAILURE);
-    }
+        error_exit("Error: Can't read from file");
 
     if (elf_header.e_ident[EI_MAG0] != ELFMAG0 ||
         elf_header.e_ident[EI_MAG1] != ELFMAG1 ||
         elf_header.e_ident[EI_MAG2] != ELFMAG2 ||
         elf_header.e_ident[EI_MAG3] != ELFMAG3)
-    {
-        dprintf(2, "Error: %s is not an ELF file\n", av[1]);
-        close(fd);
-        return (EXIT_FAILURE);
-    }
+        error_exit("Error: Not an ELF file");
 
-    print_elf_info(&elf_header);
+    print_elf_header_info(&elf_header);
 
     close(fd);
-    return (EXIT_SUCCESS);
+    return (0);
 }
